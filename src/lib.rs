@@ -55,20 +55,11 @@ pub struct BootstrapConfig<'a> {
 
 impl<'a> BootstrapConfig<'a> {
     pub fn new(
-        root_username: &'a str,
-        root_password: &'a str,
-        root_database_name: &'a str,
-        database_username: &'a str,
-        database_password: &'a str,
-        database_name: &'a str,
-        host: &'a str,
-        port: u16,
+        root: RootConfig<'a>,
+        app: ApplicationConfig<'a>,
+        conn: ConnectionConfig<'a>,
     ) -> Self {
-        Self {
-            root: RootConfig::new(root_username, root_password, root_database_name),
-            app: ApplicationConfig::new(database_username, database_password, database_name),
-            conn: ConnectionConfig::new(host, port),
-        }
+        Self { root, app, conn }
     }
 
     async fn bootstrap_user(&self, conn: &mut PgConnection) -> sqlx::Result<()> {
@@ -151,8 +142,6 @@ impl<'a> BootstrapConfig<'a> {
             .username(&self.root.username)
             .password(&self.root.password)
             .database(&self.root.database);
-
-        dbg!(&options);
 
         let mut conn = PgConnection::connect_with(&options).await?;
 
