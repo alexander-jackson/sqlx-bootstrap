@@ -64,12 +64,10 @@ impl<'a> BootstrapConfig<'a> {
 
     async fn bootstrap_user(&self, conn: &mut PgConnection) -> sqlx::Result<()> {
         // Check whether the role already exists
-        let existing_role = sqlx::query!(
-            "SELECT oid FROM pg_roles WHERE rolname = $1",
-            self.app.username
-        )
-        .fetch_optional(&mut *conn)
-        .await?;
+        let existing_role = sqlx::query("SELECT oid FROM pg_roles WHERE rolname = $1")
+            .bind(self.app.username)
+            .fetch_optional(&mut *conn)
+            .await?;
 
         if existing_role.is_some() {
             println!("Role already exists");
@@ -116,12 +114,10 @@ impl<'a> BootstrapConfig<'a> {
 
     async fn bootstrap_database(&self, conn: &mut PgConnection) -> sqlx::Result<()> {
         // Check whether the database already exists
-        let existing_database = sqlx::query!(
-            "SELECT oid FROM pg_database WHERE datname = $1",
-            self.app.database
-        )
-        .fetch_optional(&mut *conn)
-        .await?;
+        let existing_database = sqlx::query("SELECT oid FROM pg_database WHERE datname = $1")
+            .bind(self.app.database)
+            .fetch_optional(&mut *conn)
+            .await?;
 
         if existing_database.is_some() {
             println!("Database already exists");
