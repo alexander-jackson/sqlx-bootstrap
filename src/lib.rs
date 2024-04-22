@@ -1,4 +1,4 @@
-use sqlx::{postgres::PgConnectOptions, Connection, PgConnection};
+use sqlx::{postgres::PgConnectOptions, Connection, PgConnection, PgPool};
 
 #[derive(Clone, Debug)]
 pub struct RootConfig<'a> {
@@ -131,7 +131,7 @@ impl<'a> BootstrapConfig<'a> {
         Ok(())
     }
 
-    pub async fn bootstrap(&self) -> sqlx::Result<()> {
+    pub async fn bootstrap(&self) -> sqlx::Result<PgPool> {
         let options = PgConnectOptions::new()
             .host(&self.conn.host)
             .port(self.conn.port)
@@ -141,9 +141,20 @@ impl<'a> BootstrapConfig<'a> {
 
         let mut conn = PgConnection::connect_with(&options).await?;
 
+        // Bootstrap the user and database
         self.bootstrap_user(&mut conn).await?;
         self.bootstrap_database(&mut conn).await?;
 
-        Ok(())
+        // Connect to the application database
+        let connection_options = PgConnectOptions::new()
+            .host(&self.conn.host)
+            .port(self.conn.port)
+            .username(&self.app.username)
+            .password(&self.app.password)
+            .database(&self.app.database);
+
+        let pool = PgPool::connect_with(connection_options).await?;
+
+        Ok(pool)
     }
 }
