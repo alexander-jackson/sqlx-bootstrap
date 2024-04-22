@@ -133,11 +133,11 @@ impl<'a> BootstrapConfig<'a> {
 
     pub async fn bootstrap(&self) -> sqlx::Result<PgPool> {
         let options = PgConnectOptions::new()
-            .host(&self.conn.host)
+            .host(self.conn.host)
             .port(self.conn.port)
-            .username(&self.root.username)
-            .password(&self.root.password)
-            .database(&self.root.database);
+            .username(self.root.username)
+            .password(self.root.password)
+            .database(self.root.database);
 
         let mut conn = PgConnection::connect_with(&options).await?;
 
@@ -147,11 +147,11 @@ impl<'a> BootstrapConfig<'a> {
 
         // Connect to the application database
         let connection_options = PgConnectOptions::new()
-            .host(&self.conn.host)
+            .host(self.conn.host)
             .port(self.conn.port)
-            .username(&self.app.username)
-            .password(&self.app.password)
-            .database(&self.app.database);
+            .username(self.app.username)
+            .password(self.app.password)
+            .database(self.app.database);
 
         let pool = PgPool::connect_with(connection_options).await?;
 
