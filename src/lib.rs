@@ -70,7 +70,11 @@ impl<'a> BootstrapConfig<'a> {
             .await?;
 
         if existing_role.is_some() {
-            println!("Role already exists");
+            tracing::info!(
+                "Role '{}' already exists on the instance",
+                self.app.username
+            );
+
             return Ok(());
         }
 
@@ -101,6 +105,8 @@ impl<'a> BootstrapConfig<'a> {
 
         sqlx::query(&query).execute(conn).await?;
 
+        tracing::info!("Created database '{}' on the host", self.app.database);
+
         Ok(())
     }
 
@@ -120,7 +126,11 @@ impl<'a> BootstrapConfig<'a> {
             .await?;
 
         if existing_database.is_some() {
-            println!("Database already exists");
+            tracing::info!(
+                "Database '{}' already exists, not creating anything",
+                self.app.database
+            );
+
             return Ok(());
         }
 
