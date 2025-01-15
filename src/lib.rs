@@ -1,3 +1,5 @@
+use std::fmt;
+
 use sqlx::postgres::PgConnectOptions;
 use sqlx::{Connection, PgConnection, PgPool};
 
@@ -54,6 +56,7 @@ pub struct BootstrapConfig<'a> {
     conn: ConnectionConfig<'a>,
 }
 
+#[derive(Debug)]
 pub enum BootstrapFromEnvironmentError {
     VarError(std::env::VarError),
     ParseIntError(std::num::ParseIntError),
@@ -77,6 +80,18 @@ impl From<sqlx::Error> for BootstrapFromEnvironmentError {
         Self::SqlxError(value)
     }
 }
+
+impl fmt::Display for BootstrapFromEnvironmentError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::VarError(value) => value.fmt(f),
+            Self::ParseIntError(value) => value.fmt(f),
+            Self::SqlxError(value) => value.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for BootstrapFromEnvironmentError {}
 
 impl<'a> BootstrapConfig<'a> {
     pub fn new(
