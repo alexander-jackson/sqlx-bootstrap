@@ -1,4 +1,5 @@
-use sqlx::{postgres::PgConnectOptions, Connection, PgConnection, PgPool};
+use sqlx::postgres::PgConnectOptions;
+use sqlx::{Connection, PgConnection, PgPool};
 
 #[derive(Clone, Debug)]
 pub struct RootConfig<'a> {
@@ -53,6 +54,30 @@ pub struct BootstrapConfig<'a> {
     conn: ConnectionConfig<'a>,
 }
 
+pub enum BootstrapFromEnvironmentError {
+    VarError(std::env::VarError),
+    ParseIntError(std::num::ParseIntError),
+    SqlxError(sqlx::Error),
+}
+
+impl From<std::env::VarError> for BootstrapFromEnvironmentError {
+    fn from(value: std::env::VarError) -> Self {
+        Self::VarError(value)
+    }
+}
+
+impl From<std::num::ParseIntError> for BootstrapFromEnvironmentError {
+    fn from(value: std::num::ParseIntError) -> Self {
+        Self::ParseIntError(value)
+    }
+}
+
+impl From<sqlx::Error> for BootstrapFromEnvironmentError {
+    fn from(value: sqlx::Error) -> Self {
+        Self::SqlxError(value)
+    }
+}
+
 impl<'a> BootstrapConfig<'a> {
     pub fn new(
         root: RootConfig<'a>,
@@ -60,6 +85,28 @@ impl<'a> BootstrapConfig<'a> {
         conn: ConnectionConfig<'a>,
     ) -> Self {
         Self { root, app, conn }
+    }
+
+    pub async fn bootstrap_from_env() -> Result<PgPool, BootstrapFromEnvironmentError> {
+        let root_username = std::env::var("ROOT_USERNAME")?;
+        let root_password = std::env::var("ROOT_PASSWORD")?;
+        let root_database = std::env::var("ROOT_DATABASE")?;
+
+        let app_username = std::env::var("APP_USERNAME")?;
+        let app_password = std::env::var("APP_PASSWORD")?;
+        let app_database = std::env::var("APP_DATABASE")?;
+
+        let host = std::env::var("DATABASE_HOST")?;
+        let port = std::env::var("DATABASE_PORT")?.parse()?;
+
+        let root_config = RootConfig::new(&root_username, &root_password, &root_database);
+        let app_config = ApplicationConfig::new(&app_username, &app_password, &app_database);
+        let conn_config = ConnectionConfig::new(&host, port);
+
+        let config = BootstrapConfig::new(root_config, app_config, conn_config);
+        let pool = config.bootstrap().await?;
+
+        Ok(pool)
     }
 
     async fn bootstrap_user(&self, conn: &mut PgConnection) -> sqlx::Result<()> {
